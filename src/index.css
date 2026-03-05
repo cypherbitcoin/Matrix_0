@@ -1,0 +1,95 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    @apply antialiased bg-[#050505] text-slate-200;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #1a1a1a;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2a2a;
+}
+
+.matrix-grid {
+  background-image: 
+    linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.glass-panel {
+  background: rgba(15, 15, 15, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.funko-shadow {
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5));
+}
+
+.status-glow-green {
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+}
+
+.prose ul {
+  @apply list-disc pl-5 space-y-1;
+}
+
+.prose li {
+  @apply text-slate-400;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
+}
+
+.slack-chat {
+  @apply flex flex-col h-full bg-[#0a0a0a] border border-white/5 rounded-3xl overflow-hidden;
+}
+
+.slack-message {
+  @apply flex gap-4 p-4 hover:bg-white/5 transition-all border-b border-white/5;
+}
+
+.notepad-editor {
+  @apply w-full h-full bg-[#0a0a0a] text-slate-300 font-mono text-sm p-8 focus:outline-none resize-none border-none;
+  background-image: linear-gradient(#1a1a1a 1px, transparent 1px);
+  background-size: 100% 2rem;
+  line-height: 2rem;
+}
+
+.emergency-btn {
+  @apply bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-xl font-bold text-[10px] tracking-widest shadow-lg shadow-red-600/20 animate-pulse;
+}
+
+.matrix-rain-mini {
+  background: linear-gradient(180deg, transparent 0%, #00ff41 50%, transparent 100%);
+  background-size: 100% 200%;
+  animation: matrix-rain-mini 2s linear infinite;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes matrix-rain-mini {
+  0% { background-position: 0% -100%; }
+  100% { background-position: 0% 100%; }
+}
