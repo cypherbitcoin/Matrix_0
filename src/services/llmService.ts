@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 // Initialize Gemini only if key is present
-const GEMINI_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY || "";
 const ai = GEMINI_KEY ? new GoogleGenAI({ apiKey: GEMINI_KEY }) : null;
 
 async function callLocalLLM(prompt: string, options: any = {}) {
@@ -20,7 +20,7 @@ async function callLocalLLM(prompt: string, options: any = {}) {
   }
 }
 
-export async function breakDownTask(title: string, description: string, context?: string) {
+export async function breakDownTask(title: string, description: string, context?: string, apiKey?: string) {
   const prompt = `
     You are an expert project manager. Break down the following task into a logical sequence of subtasks.
     
@@ -37,9 +37,11 @@ export async function breakDownTask(title: string, description: string, context?
     IMPORTANT: Return ONLY the JSON array.
   `;
 
-  if (ai) {
+  const client = apiKey ? new GoogleGenAI({ apiKey }) : ai;
+
+  if (client) {
     try {
-      const response = await ai.models.generateContent({
+      const response = await client.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
         config: {
@@ -113,7 +115,7 @@ export async function executeSubtask(
   return await callLocalLLM(prompt) || "Error: No LLM available for execution.";
 }
 
-export async function chatWithAgent(message: string, context: string) {
+export async function chatWithAgent(message: string, context: string, apiKey?: string) {
   const needsBackendKeywords = ['run', 'exec', 'shell', 'search', 'data', 'file', 'mission', 'task', 'deploy', 'install', 'terminal', 'system', 'process'];
   const needsBackend = needsBackendKeywords.some(kw => message.toLowerCase().includes(kw));
 
@@ -125,15 +127,17 @@ export async function chatWithAgent(message: string, context: string) {
     Respond to the user's message using your personality and memory context.
   `;
 
+  const client = apiKey ? new GoogleGenAI({ apiKey }) : ai;
+
   // Always try local first if it's a "system" command or if Gemini is missing
-  if (needsBackend || !ai) {
+  if (needsBackend || !client) {
     const localResponse = await callLocalLLM(prompt);
     if (localResponse) return localResponse;
   }
 
-  if (ai) {
+  if (client) {
     try {
-      const response = await ai.models.generateContent({
+      const response = await client.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
       });

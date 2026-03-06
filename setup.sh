@@ -7,9 +7,10 @@ echo "------------------------------------------------"
 echo "Initializing Zion Orchestrator Installation..."
 echo "------------------------------------------------"
 
-# Check for Node.js
-if ! command -v node &> /dev/null; then
-    echo "❌ Node.js not found. Please install Node.js (v18+) first."
+# Check for Node.js version >= 18
+NODE_VERSION=$(node -v | cut -d 'v' -f 2 | cut -d '.' -f 1)
+if [ "$NODE_VERSION" -lt 18 ]; then
+    echo "❌ Node.js version 18 or higher is required. Current version: $(node -v)"
     exit 1
 fi
 
@@ -29,12 +30,14 @@ fi
 if [ ! -f .env ]; then
     echo "📝 Creating .env file from .env.example..."
     cp .env.example .env
+    echo "VITE_GEMINI_API_KEY=" >> .env
+    echo "GATEWAY_URL=http://localhost:18789" >> .env
     echo "⚠️  Please edit .env later if you want to add your Gemini API Key."
 fi
 
 # Install dependencies
 echo "📦 Installing dependencies (this may take a minute)..."
-npm install --no-fund --no-audit
+npm install --no-fund --no-audit --no-optional
 
 # Build the project
 echo "🏗️  Building the frontend assets..."
@@ -52,4 +55,4 @@ fi
 echo "🚀 Starting Zion Orchestrator..."
 echo "🌐 Automatically opening the dashboard in your browser..."
 echo "------------------------------------------------"
-npm start
+npm run dev

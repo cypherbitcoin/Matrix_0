@@ -164,6 +164,9 @@ export default function App() {
   const [viewingProject, setViewingProject] = useState<Task | null>(null);
   const [selectedAgentInProject, setSelectedAgentInProject] = useState<Agent | null>(null);
   const [loadedFiles, setLoadedFiles] = useState<Record<string, boolean>>({ 'soul.md': true, 'agent.md': true });
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return !localStorage.getItem('zion_configured') && !process.env.VITE_GEMINI_API_KEY;
+  });
   const [newAgentForm, setNewAgentForm] = useState<Partial<Agent>>({
     name: '',
     role: '',
@@ -333,7 +336,7 @@ export default function App() {
     }
   };
 
-  const handleSaveSetup = async () => {
+  const handleSaveSetup = async (apiKey?: string) => {
     try {
       const settings = [
         { key: 'setup_complete', value: 'true' },
@@ -341,6 +344,10 @@ export default function App() {
         { key: 'gateway_url', value: setupData.gatewayUrl },
         { key: 'gateway_token', value: setupData.gatewayToken }
       ];
+
+      if (apiKey) {
+        settings.push({ key: 'gemini_api_key', value: apiKey });
+      }
 
       for (const s of settings) {
         await fetch('/api/settings', {
@@ -351,6 +358,8 @@ export default function App() {
       }
 
       setIsSetupComplete(true);
+      setShowWelcome(false);
+      localStorage.setItem('zion_configured', 'true');
     } catch (error) {
       console.error('Failed to save setup:', error);
     }
@@ -569,7 +578,12 @@ export default function App() {
     if (!selectedTask) return;
     setIsProcessing(true);
     try {
-      const subtasks = await breakDownTask(selectedTask.title, selectedTask.description);
+      const subtasks = await breakDownTask(
+        selectedTask.title, 
+        selectedTask.description, 
+        undefined,
+        llmSettings.agentConfigs.architect.apiKey || undefined
+      );
       const formattedSubtasks = subtasks.map((s: any, index: number) => ({
         ...s,
         taskId: selectedTask.id,
@@ -609,7 +623,8 @@ export default function App() {
         subtask.title, 
         subtask.description, 
         selectedTask.description,
-        agent?.model
+        agent?.model,
+        llmSettings.agentConfigs.architect.apiKey || undefined
       );
 
       await fetch(`/api/subtasks/${subtask.id}`, {
@@ -658,6 +673,100 @@ export default function App() {
     const completed = allSubtasks.filter(s => s.status === 'completed').length;
     return Math.round((completed / allSubtasks.length) * 100);
   }, [tasks]);
+
+  if (showWelcome) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#020202] matrix-grid">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-panel p-12 rounded-[3rem] border-white/5 max-w-2xl w-full mx-4 text-center"
+        >
+          <div className="w-20 h-20 bg-[#00ff41]/10 rounded-3xl flex items-center justify-center border border-[#00ff41]/20 mb-8 mx-auto relative overflow-hidden">
+             <div className="absolute inset-0 opacity-20 pointer-events-none">
+              <div className="matrix-rain-mini" />
+            </div>
+            <Cpu className="w-10 h-10 text-[#00ff41] z-10" />
+          </div>
+          
+          <h1 className="text-4xl font-bold text-white mb-4 tracking-tighter">Welcome to Zion</h1>
+          <p className="text-slate-400 mb-12 leading-relaxed">
+            The mainframe is initializing. To establish a stable connection to the intelligence nodes, 
+            please select your primary computational engine.
+          </p>
+
+          <div className="grid grid-cols-2 gap-6 mb-12">
+            <button 
+              onClick={() => {
+                setLlmSettings(prev => ({ ...prev, primaryProvider: 'Google', primaryModelId: 'gemini-3-flash-preview' }));
+              }}
+              className={cn(
+                "p-6 rounded-3xl border transition-all text-left group",
+                llmSettings.primaryProvider === 'Google' 
+                  ? "bg-[#00ff41]/10 border-[#00ff41]/30" 
+                  : "bg-white/5 border-white/5 hover:bg-white/10"
+              )}
+            >
+              <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Zap className={cn("w-5 h-5", llmSettings.primaryProvider === 'Google' ? "text-[#00ff41]" : "text-slate-500")} />
+              </div>
+              <h3 className="text-sm font-bold text-white mb-1">Google Gemini</h3>
+              <p className="text-[10px] text-slate-500 leading-tight">High-performance cloud intelligence. Requires API Key.</p>
+            </button>
+
+            <button 
+              onClick={() => {
+                setLlmSettings(prev => ({ ...prev, primaryProvider: 'Local', primaryModelId: 'openclaw' }));
+              }}
+              className={cn(
+                "p-6 rounded-3xl border transition-all text-left group",
+                llmSettings.primaryProvider === 'Local' 
+                  ? "bg-indigo-500/10 border-indigo-500/30" 
+                  : "bg-white/5 border-white/5 hover:bg-white/10"
+              )}
+            >
+              <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <Database className={cn("w-5 h-5", llmSettings.primaryProvider === 'Local' ? "text-indigo-400" : "text-slate-500")} />
+              </div>
+              <h3 className="text-sm font-bold text-white mb-1">Local Gateway</h3>
+              <p className="text-[10px] text-slate-500 leading-tight">Private, local execution via Ollama or OpenClaw.</p>
+            </button>
+          </div>
+
+          {llmSettings.primaryProvider === 'Google' && (
+            <div className="mb-12 text-left">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 block">Gemini API Key</label>
+              <input 
+                type="password"
+                placeholder="Paste your key here..."
+                className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:ring-1 focus:ring-[#00ff41]/50 outline-none transition-all"
+                value={llmSettings.agentConfigs.architect.apiKey}
+                onChange={(e) => {
+                  const key = e.target.value;
+                  setLlmSettings(prev => ({
+                    ...prev,
+                    agentConfigs: {
+                      ...prev.agentConfigs,
+                      architect: { ...prev.agentConfigs.architect, apiKey: key }
+                    }
+                  }));
+                }}
+              />
+            </div>
+          )}
+
+          <button 
+            onClick={() => {
+              handleSaveSetup(llmSettings.agentConfigs.architect.apiKey || undefined);
+            }}
+            className="w-full py-4 bg-[#00ff41] text-black rounded-2xl font-bold uppercase tracking-widest hover:bg-[#00ff41]/90 transition-all flex items-center justify-center gap-2"
+          >
+            Initialize Mainframe <ChevronRight className="w-4 h-4" />
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-[#020202] text-slate-300 font-sans overflow-hidden matrix-grid">
@@ -987,7 +1096,7 @@ export default function App() {
                                   
                                   setArchitectStatus('thinking');
                                   try {
-                                    const response = await chatWithAgent('Architect', text);
+                                    const response = await chatWithAgent('Architect', text, llmSettings.agentConfigs.architect.apiKey || undefined);
                                     setArchitectMessages(prev => [...prev, { 
                                       role: 'architect', 
                                       text: response, 
@@ -3300,123 +3409,7 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Setup Wizard */}
-      <AnimatePresence>
-        {isSetupComplete === false && (
-          <div className="fixed inset-0 bg-black z-[200] flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="glass-panel rounded-[3rem] w-full max-w-2xl shadow-2xl border-white/10 p-12 space-y-10 bg-[#050505]"
-            >
-              <div className="text-center space-y-4">
-                <div className="w-20 h-20 bg-[#00ff41]/10 rounded-3xl flex items-center justify-center border border-[#00ff41]/20 mx-auto mb-6">
-                  <Settings className="w-10 h-10 text-[#00ff41] animate-spin-slow" />
-                </div>
-                <h1 className="text-4xl font-bold text-white tracking-tighter">Zion Mainframe Setup</h1>
-                <p className="text-slate-500 text-sm max-w-md mx-auto">Initialize your neural link and configure the OpenClaw gateway to begin operations.</p>
-              </div>
-
-              <div className="space-y-8">
-                {/* Environment Selection */}
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block text-center">Deployment Environment</label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <button 
-                      onClick={() => setSetupData({ ...setupData, envType: 'localhost', gatewayUrl: 'http://localhost:18789' })}
-                      className={cn(
-                        "p-6 rounded-3xl border transition-all flex flex-col items-center gap-3",
-                        setupData.envType === 'localhost' 
-                          ? "bg-[#00ff41]/10 border-[#00ff41]/30 text-[#00ff41]" 
-                          : "bg-white/5 border-white/5 text-slate-500 hover:bg-white/10"
-                      )}
-                    >
-                      <Monitor className="w-6 h-6" />
-                      <span className="text-xs font-bold uppercase tracking-widest">Localhost</span>
-                    </button>
-                    <button 
-                      onClick={() => setSetupData({ ...setupData, envType: 'vps' })}
-                      className={cn(
-                        "p-6 rounded-3xl border transition-all flex flex-col items-center gap-3",
-                        setupData.envType === 'vps' 
-                          ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-400" 
-                          : "bg-white/5 border-white/5 text-slate-500 hover:bg-white/10"
-                      )}
-                    >
-                      <Globe className="w-6 h-6" />
-                      <span className="text-xs font-bold uppercase tracking-widest">Remote VPS</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Gateway Configuration */}
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Gateway URL</label>
-                    <div className="relative">
-                      <input 
-                        type="text"
-                        value={setupData.gatewayUrl}
-                        onChange={(e) => setSetupData({ ...setupData, gatewayUrl: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:ring-1 focus:ring-[#00ff41]/50 outline-none transition-all"
-                        placeholder="e.g. http://12.34.56.78:18789"
-                      />
-                      <Network className="w-4 h-4 text-slate-600 absolute right-6 top-1/2 -translate-y-1/2" />
-                    </div>
-                    <p className="text-[10px] text-slate-600 ml-1 italic">
-                      {setupData.envType === 'localhost' 
-                        ? "Default: http://localhost:18789" 
-                        : "Paste your VPS address, e.g. http://12.34.56.78:18789"}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest ml-1">Gateway Token</label>
-                    <div className="relative">
-                      <input 
-                        type="password"
-                        value={setupData.gatewayToken}
-                        onChange={(e) => setSetupData({ ...setupData, gatewayToken: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:ring-1 focus:ring-[#00ff41]/50 outline-none transition-all"
-                        placeholder="Enter your authorization token"
-                      />
-                      <Shield className="w-4 h-4 text-slate-600 absolute right-6 top-1/2 -translate-y-1/2" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Help Section */}
-                <div className="p-6 bg-white/5 rounded-3xl border border-white/5 space-y-4">
-                  <div className="flex items-center gap-3 text-[#00ff41]">
-                    <Terminal className="w-4 h-4" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Terminal Instructions</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">
-                    To find your token or start the gateway, run the following command in your terminal:
-                  </p>
-                  <div className="bg-black/60 rounded-xl p-4 font-mono text-[10px] text-[#00ff41] border border-white/5 flex items-center justify-between">
-                    <code>openclaw gateway status</code>
-                    <button 
-                      onClick={() => navigator.clipboard.writeText('openclaw gateway status')}
-                      className="text-slate-600 hover:text-white transition-colors"
-                    >
-                      <Save className="w-3 h-3" />
-                    </button>
-                  </div>
-                </div>
-
-                <button 
-                  onClick={handleSaveSetup}
-                  disabled={!setupData.gatewayUrl || !setupData.gatewayToken}
-                  className="w-full bg-[#00ff41] text-black py-5 rounded-3xl font-bold uppercase tracking-[0.2em] hover:bg-[#00ff41]/90 transition-all shadow-xl shadow-[#00ff41]/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                >
-                  Initialize Neural Link
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Setup Wizard removed in favor of WelcomeScreen */}
 
       {/* Create Task Modal */}
       <AnimatePresence>

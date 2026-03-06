@@ -7,7 +7,7 @@
     "zion-orchestrator": "./cli.js"
   },
   "scripts": {
-    "dev": "tsx -r dotenv/config server.ts",
+    "dev": "concurrently \"vite\" \"node --loader ts-node/esm server.ts\"",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -43,7 +43,6 @@
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
-    "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "better-sqlite3": "^12.4.1",
     "clsx": "^2.1.1",
@@ -73,8 +72,9 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
-    "tailwindcss": "^4.1.14",
-    "tsx": "^4.21.0",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.17",
+    "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
