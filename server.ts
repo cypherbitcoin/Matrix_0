@@ -5,11 +5,17 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import multer from "multer";
+import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure workspace directory exists
+// Ensure directories exist
+const dataDir = path.join(__dirname, "data");
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
 const workspaceDir = path.join(__dirname, "workspace");
 if (!fs.existsSync(workspaceDir)) {
   fs.mkdirSync(workspaceDir, { recursive: true });
@@ -26,7 +32,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-const db = new Database("orchestrator.db");
+const db = new Database(path.join(dataDir, "database.sqlite"));
 
 // Initialize Database
 db.exec(`
@@ -87,9 +93,14 @@ if (agentCount.count === 0) {
 
 async function startServer() {
   const app = express();
+  
+  // Initialize CORS BEFORE any routes
+  app.use(cors());
+  
+  // Ensure express.json() is present early
   app.use(express.json({ limit: '50mb' }));
 
-  const PORT = 3000;
+  const PORT = 5000;
 
   // API Routes
   app.get("/api/agents", (req, res) => {
@@ -343,14 +354,14 @@ async function startServer() {
     res.json(activeTasks);
   });
 
-  // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  // Vite middleware for development - disabled when running separately with proxy
+  if (process.env.NODE_ENV !== "production" && !process.env.USE_VITE_PROXY) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
+  } else if (process.env.NODE_ENV === "production") {
     app.use(express.static(path.join(__dirname, "dist")));
     app.get("*", (req, res) => {
       res.sendFile(path.join(__dirname, "dist", "index.html"));
