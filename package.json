@@ -1,14 +1,45 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "bin": {
+    "zion-orchestrator": "./cli.js"
+  },
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "start": "node cli.js",
+    "desktop": "electron .",
+    "install-gateway": "echo 'Installing OpenClaw Gateway...' && git clone https://github.com/openclaw/openclaw.git gateway || echo 'Gateway already exists'",
+    "setup": "npm install && npm run build && npm run install-gateway",
+    "postinstall": "npm run build"
+  },
+  "build": {
+    "appId": "com.zion.orchestrator",
+    "productName": "Zion Orchestrator",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "dist/**/*",
+      "main.js",
+      "server.ts",
+      "orchestrator.db",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -16,14 +47,18 @@
     "@vitejs/plugin-react": "^5.0.4",
     "better-sqlite3": "^12.4.1",
     "clsx": "^2.1.1",
+    "concurrently": "^9.2.1",
     "d3": "^7.9.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
+    "electron": "^40.8.0",
+    "electron-builder": "^26.8.1",
     "express": "^4.21.2",
     "lucide-react": "^0.546.0",
     "mammoth": "^1.11.0",
     "motion": "^12.23.24",
     "multer": "^2.1.1",
+    "open": "^11.0.0",
     "pdfjs-dist": "^5.5.207",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
