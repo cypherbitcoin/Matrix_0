@@ -81,7 +81,7 @@ import {
 } from 'recharts';
 import { Task, Subtask, Agent, Document } from './types';
 import { generateId, cn } from './lib/utils';
-import { breakDownTask, executeSubtask, chatWithAgent } from './services/geminiService';
+import { breakDownTask, executeSubtask, chatWithAgent } from './services/llmService';
 import { MindMap } from './components/MindMap';
 import { ChatBubble } from './components/ChatBubble';
 import { DocEditor } from './components/DocEditor';
@@ -167,8 +167,8 @@ export default function App() {
   const [newAgentForm, setNewAgentForm] = useState<Partial<Agent>>({
     name: '',
     role: '',
-    provider: 'Google',
-    model: 'gemini-3.1-pro-preview',
+    provider: 'Local',
+    model: 'openclaw',
     hardBoundaries: '',
     personality: '',
     soul: '',
@@ -246,14 +246,14 @@ export default function App() {
 
   // LLM Settings State
   const [llmSettings, setLlmSettings] = useState({
-    primaryModel: 'Google',
-    primaryModelName: 'Gemini 3 Flash ⚡',
-    fallbackModel: 'Google',
-    fallbackModelName: 'Gemini 2.5 Pro ☁️',
-    plannerModel: 'Openrouter-frontier',
-    plannerModelName: 'Gemini 3.1 Pro Preview 👑',
-    plannerFallback: 'Openrouter-frontier',
-    plannerFallbackName: 'Grok 4.1 Fast ⚡',
+    primaryModel: 'Local',
+    primaryModelName: 'OpenClaw / Ollama ⚡',
+    fallbackModel: 'Local',
+    fallbackModelName: 'Local Fallback ☁️',
+    plannerModel: 'Local',
+    plannerModelName: 'Zion Planner 👑',
+    plannerFallback: 'Local',
+    plannerFallbackName: 'Local Fast ⚡',
     autoFallback: true,
     smartRouting: true,
     streaming: true,
@@ -262,16 +262,16 @@ export default function App() {
     updateInterval: 'Every 6 hours (default)',
     speakTimeout: 600,
     maxReActTurns: 50,
-    primaryProvider: 'Google',
-    primaryModelId: 'gemini-3-flash-preview',
-    fallbackProvider: 'Google',
-    fallbackModelId: 'gemini-2.5-pro',
+    primaryProvider: 'Local',
+    primaryModelId: 'openclaw',
+    fallbackProvider: 'Local',
+    fallbackModelId: 'local-model',
     agentConfigs: {
-      architect: { provider: 'Google', model: 'gemini-3.1-pro-preview', apiKey: '', role: 'Depth 0 (Main Agent)' },
-      neo: { provider: 'Google', model: 'gemini-3-flash-preview', apiKey: '', role: 'Depth 1 (Orchestrator)' },
-      trinity: { provider: 'Openrouter-frontier', model: 'claude-3-5-sonnet', apiKey: '', role: 'Depth 2 (Coding)' },
-      morpheus: { provider: 'Openrouter-frontier', model: 'gpt-4o', apiKey: '', role: 'Depth 2 (Research)' },
-      smith: { provider: 'Ollama', model: 'llama-3-70b', apiKey: '', role: 'Depth 2 (Security)' },
+      architect: { provider: 'Local', model: 'openclaw', apiKey: '', role: 'Depth 0 (Main Agent)' },
+      neo: { provider: 'Local', model: 'openclaw', apiKey: '', role: 'Depth 1 (Orchestrator)' },
+      trinity: { provider: 'Local', model: 'openclaw', apiKey: '', role: 'Depth 2 (Coding)' },
+      morpheus: { provider: 'Local', model: 'openclaw', apiKey: '', role: 'Depth 2 (Research)' },
+      smith: { provider: 'Local', model: 'openclaw', apiKey: '', role: 'Depth 2 (Security)' },
     }
   });
 

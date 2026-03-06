@@ -7,14 +7,14 @@
     "zion-orchestrator": "./cli.js"
   },
   "scripts": {
-    "dev": "tsx server.ts",
+    "dev": "tsx -r dotenv/config server.ts",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
     "start": "node cli.js",
     "desktop": "electron .",
-    "install-gateway": "echo 'Installing OpenClaw Gateway...' && git clone https://github.com/openclaw/openclaw.git gateway || echo 'Gateway already exists'",
+    "install-gateway": "if [ ! -d \"gateway\" ]; then echo 'Installing OpenClaw Gateway...' && git clone https://github.com/openclaw/openclaw.git gateway; else echo 'Gateway already exists'; fi",
     "setup": "npm install && npm run build && npm run install-gateway",
     "postinstall": "npm run build"
   },
@@ -70,6 +70,7 @@
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
+    "@types/multer": "^2.0.0",
     "@types/node": "^22.14.0",
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.1.14",

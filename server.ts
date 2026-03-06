@@ -279,8 +279,10 @@ async function startServer() {
     const gatewayUrlSetting = db.prepare("SELECT value FROM settings WHERE key = 'gateway_url'").get() as { value: string } | undefined;
     const gatewayTokenSetting = db.prepare("SELECT value FROM settings WHERE key = 'gateway_token'").get() as { value: string } | undefined;
     
-    const gatewayUrl = gatewayUrlSetting?.value || 'http://localhost:18789';
+    const gatewayUrl = gatewayUrlSetting?.value || process.env.GATEWAY_URL || 'http://localhost:18789';
     const gatewayToken = gatewayTokenSetting?.value || process.env.GATEWAY_TOKEN || "";
+
+    console.log(`Proxying request to: ${gatewayUrl}`);
 
     try {
       const response = await fetch(`${gatewayUrl.replace(/\/$/, '')}/v1/chat/completions`, {
@@ -291,16 +293,22 @@ async function startServer() {
         },
         body: JSON.stringify({
           model: "openclaw",
-          messages: [{ role: "user", content: message }]
+          messages: [{ role: "user", content: message }],
+          stream: false
         })
       });
 
-      if (!response.ok) throw new Error('Gateway unreachable');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Gateway error (${response.status}): ${errorText}`);
+        throw new Error(`Gateway unreachable: ${response.status}`);
+      }
       
       const data = await response.json();
       res.json({ content: data.choices[0].message.content });
-    } catch (error) {
-      res.status(503).json({ error: 'Gateway offline' });
+    } catch (error: any) {
+      console.error("Proxy Error:", error.message);
+      res.status(503).json({ error: 'Gateway offline', details: error.message });
     }
   });
 
@@ -350,7 +358,11 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`------------------------------------------------`);
+    console.log(`🚀 Zion Orchestrator is running!`);
+    console.log(`🌐 Local:   http://localhost:${PORT}`);
+    console.log(`🌐 Network: http://0.0.0.0:${PORT}`);
+    console.log(`------------------------------------------------`);
   });
 }
 
